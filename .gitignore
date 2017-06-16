@@ -1,0 +1,12 @@
+
+.classpath
+.project
+.settings/.jsdtscope
+.settings/com.vaadin.integration.eclipse.prefs
+*.prefs
+.settings/org.eclipse.wst.common.component
+.settings/org.eclipse.wst.common.project.facet.core.xml
+.settings/org.eclipse.wst.jsdt.ui.superType.container
+.settings/org.eclipse.wst.jsdt.ui.superType.name
+target/hypothesis.browser-0.0.1/VAADIN/themes/owlcs/addons.scss
+target
