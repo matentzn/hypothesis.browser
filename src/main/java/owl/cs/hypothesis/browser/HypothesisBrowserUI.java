@@ -51,11 +51,11 @@ public class HypothesisBrowserUI extends UI {
 	}
 
 	private File getTempDir() throws IOException {
-		File tempdir = new File("D:\\svn\\cerner\\misc\\discern-ontology\\discern-owl");
+		File tempdir = new File("D:\\svn\\cerner\\misc\\discern-ontology");
 		if(tempdir.exists()) {
 			return tempdir;
 		} 
-		tempdir = new File("/home/zeus/cerner/discern/discern-owl/");
+		tempdir = new File("/home/zeus/cerner/discern");
 		if(tempdir.exists()) {
 			return tempdir;
 		} else {

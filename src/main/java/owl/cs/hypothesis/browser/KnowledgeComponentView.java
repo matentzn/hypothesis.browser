@@ -60,7 +60,7 @@ public class KnowledgeComponentView extends VerticalLayout {
 			}
 		}
 		List<HypothesisI> hypothesessub = new ArrayList<>();
-		if (hypotheses.size() > kcvf.getMaxUsage()) {
+		if (hypotheses.size() > kcvf.getMaxHypotheses()) {
 			hypothesessub.addAll(hypotheses.subList(0, kcvf.getMaxHypotheses()));
 		} else {
 			hypothesessub.addAll(hypotheses);

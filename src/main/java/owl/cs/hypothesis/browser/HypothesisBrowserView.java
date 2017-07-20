@@ -44,9 +44,9 @@ import eu.maxschuster.vaadin.autocompletetextfield.provider.MatchMode;
 import eu.maxschuster.vaadin.autocompletetextfield.shared.ScrollBehavior;
 
 public class HypothesisBrowserView extends VerticalLayout {
-
-	final File versions;
-	final File hypotheses;
+	final File repodir;
+	File versions;
+	File hypotheses;
 	// final OntologyUploader receiver;
 	Upload upload;
 
@@ -55,6 +55,7 @@ public class HypothesisBrowserView extends VerticalLayout {
 	VerticalLayout vl_downloads = new VerticalLayout();
 	VerticalLayout vl_filtering = new VerticalLayout();
 	HorizontalLayout vl_doselect = new HorizontalLayout();
+	HorizontalLayout vl_doselectent = new HorizontalLayout();
 
 	Slider sl_maxhyp = new Slider(1, 200);
 	Slider sl_maxuse = new Slider(1, 100);
@@ -66,12 +67,14 @@ public class HypothesisBrowserView extends VerticalLayout {
 	Button bt_refresh = new Button("Reload ontologies");
 	Button bt_download = new Button("Download");
 
-	ComboBox cb_do = new ComboBox("DO Fragment");
+	ComboBox cb_do = new ComboBox("Select Ontology");
 	ListSelect select = new ListSelect("Exclude Axiom Types");
-	AutocompleteTextField ac_entityselect = new AutocompleteTextField("Select entity");
+	
 
 	KnowledgeComponentListView list_kcomps = new KnowledgeComponentListView();
 
+	String currentSelectedEntity=null;
+	
 	/**
 	 * 
 	 */
@@ -79,8 +82,7 @@ public class HypothesisBrowserView extends VerticalLayout {
 	private static final Double MAX_VALUE = 99999.0;
 
 	public HypothesisBrowserView(File tempdir) {
-		versions = new File(tempdir, "versions");
-		hypotheses = new File(tempdir, "hypotheses");
+		this.repodir = tempdir;
 		// setMargin(true);
 		setSpacing(true);
 		layoutSelectorPanel();
@@ -95,20 +97,24 @@ public class HypothesisBrowserView extends VerticalLayout {
 	private void update(AppStatus status) {
 		switch (status) {
 		case INIT:
-
-			if (!Ontologies.isPrepared()) {
-				Ontologies.refreshOntologies(versions);
-			}
-
 			removeAllComponents();
-			addComponent(bt_refresh);
+			//addComponent(bt_refresh);
 			addComponent(vl_doselect);
-			prepareEntitySelector();
-			
+			prepareOntologySelector();
 			break;
-		case DOSELECTED:
-
-			// prepareEntitySelector();
+		case ONTSELECTED:
+			removeAllComponents();
+			
+			addComponent(vl_doselect);
+			
+			String o = getSelectedOntology();
+			versions = new File(new File(repodir,o), "versions");
+			hypotheses = new File(new File(repodir,o), "hypotheses");
+			Ontologies.refreshOntologies(versions);
+			prepareEntitySelector();
+			//if(Ontologies.isPrepared())
+			
+			
 			break;
 		case ENTITYSELECTED:
 			prepareKnowledge();
@@ -139,6 +145,7 @@ public class HypothesisBrowserView extends VerticalLayout {
 
 	private void prepareKnowledge() {
 		String label = getSelectedEntity();
+		if(label==null) return;
 		List<KnowledgeComponent> components = new ArrayList<>();
 		for (OWLEntity cl : Ontologies.map_entity_label.get(label)) {
 			for (File file : versions.listFiles()) {
@@ -171,20 +178,20 @@ public class HypothesisBrowserView extends VerticalLayout {
 	}
 
 	private String getSelectedEntity() {
-		return ac_entityselect.getValue();
+		return currentSelectedEntity;
 	}
 
-	private String getSelectedDO() {
+	private String getSelectedOntology() {
 		return (String) cb_do.getValue();
 	}
 
-	private void prepareDOSelector() {
-		for (File file : versions.listFiles()) {
-			if (file.getName().startsWith("AC-") && file.getName().endsWith(".owl")) {
+	private void prepareOntologySelector() {
+		for (File file : repodir.listFiles()) {
+			if (file.isDirectory()&&new File(file,"versions").exists()) {
 				cb_do.addItem(file.getName());
 			}
 		}
-		cb_do.addValueChangeListener(e -> update(AppStatus.DOSELECTED));
+		cb_do.addValueChangeListener(e -> update(AppStatus.ONTSELECTED));
 	}
 
 	private void layoutKnowledgePanel() {
@@ -194,16 +201,17 @@ public class HypothesisBrowserView extends VerticalLayout {
 	}
 
 	private void layoutSelectorPanel() {
-		// vl_doselect.setMargin(true);
-		// vl_doselect.setSpacing(true);
-		// vl_doselect.addComponent(cb_do);
-		
-		vl_doselect.addComponent(ac_entityselect);
+		//vl_doselect.setMargin(true);
+		//vl_doselect.setSpacing(true);
+		vl_doselect.addComponent(cb_do);
+		vl_doselect.addComponent(vl_doselectent);
 		
 	}
 
 	private void prepareEntitySelector() {
-
+		vl_doselectent.removeAllComponents();
+		AutocompleteTextField ac_entityselect = new AutocompleteTextField("Select entity");
+		ac_entityselect.getListeners(ValueChangeListener.class).forEach(r->ac_entityselect.removeListener((Class<?>) r,ValueChangeEvent.class));
 		Collection<String> labels = new ArrayList<>();
 
 		Ontologies.getAllLabels(labels);
@@ -219,8 +227,10 @@ public class HypothesisBrowserView extends VerticalLayout {
 		ac_entityselect.setSuggestionLimit(0); // The max amount of suggestions
 		ac_entityselect.setSuggestionProvider(suggestionProvider);
 		ac_entityselect.addValueChangeListener(e -> {
+			currentSelectedEntity = ac_entityselect.getValue();
 			update(AppStatus.ENTITYSELECTED);
 		});
+		vl_doselectent.addComponent(ac_entityselect);
 	}
 
 	private void layoutDownload() {
@@ -284,7 +294,7 @@ public class HypothesisBrowserView extends VerticalLayout {
 		layoutSliderOption("Maximum number of Hypotheses", sl_maxhyp, 10, sliders);
 		layoutSliderOption("Maximum number of axioms in Usage", sl_maxuse, 10, sliders);
 		layoutSliderOption("Minimum Precison", sl_minconfidence, 0.9, sliders);
-		layoutSliderOption("Minimum Lift", sl_minlift, 1.0, sliders);
+		//layoutSliderOption("Minimum Lift", sl_minlift, 0.0, sliders);
 		layoutSliderOption("Minimum Support", sl_minsupport, 10, sliders);
 		layoutSliderOption("Minimum Assumption", sl_minassumption, 0, sliders);
 
